@@ -1,6 +1,6 @@
 /*
 	Hoping to achieve the use of point_hurt multiple times on the same frame
-	without needing or create additional point_hurts
+	without needing or creating additional point_hurts
 	
 	HurtQueue.enqueue(handle[] victims, int damageAmount, int damageType, handle attacker = null, string weapon = null);
 */
@@ -34,6 +34,7 @@ HurtQueue <- {
 	defaultName = "player",
 	queue = null,
 	last = null,
+	n = 0,
 	hurtNode = class{
 		next = null;
 		
@@ -59,6 +60,7 @@ HurtQueue <- {
 			last.next = node;
 			last = node;
 		}
+		n++;
 		//printl("Enqueued. Current size: " + size());
 		EntFireByHandle(pointHurt, "Hurt", "", 0.00, attacker, null);
 		EntFireByHandle(pointHurt, "RunScriptCode", "resetName()", 0.00, null, null);
@@ -76,20 +78,12 @@ HurtQueue <- {
 		if(!queue){
 			last = null;
 		}
+		n--;
 		//printl("Dequeued. Current size: " + size());
 		return q;
 	}
 	function size(){
-		if(!queue){
-			return 0;
-		}
-		local i = 0;
-		local node = queue;
-		while(node){
-			i++;
-			node = node.next;
-		}
-		return i;
+		return n;
 	}
 	function InputHurt(){
 		foreach(v in queue.victims){
