@@ -4,6 +4,9 @@
 	
 	HurtQueue.enqueue(handle[] victims, int damageAmount, int damageType, handle attacker = null, string weapon = null);
 */
+if("HurtQueue" in getroottable()){
+	return;
+}
 
 enum DMG_TYPE {
 	GENERIC = 0 
@@ -28,7 +31,7 @@ enum DMG_TYPE {
 	SLOWBURN = 2097152
 	REMOVENORAGDOLL = 4194304
 }
-HurtQueue <- {
+::HurtQueue <- {
 	pointHurt = null,
 	hurtName = "hurt_player",
 	defaultName = "player",
@@ -97,9 +100,17 @@ HurtQueue <- {
 		pointHurt.__KeyValueFromString("classname", queue.weapon != null ? queue.weapon : "point_hurt");
 		return true;
 	}
+	function init(){
+		if(pointHurt){
+			return;
+		}
+		pointHurt = Entities.CreateByClassname("point_hurt").weakref();
+		pointHurt.__KeyValueFromString("DamageTarget", HurtQueue.hurtName);
+		pointHurt.__KeyValueFromString("classname", "func_brush");
+		pointHurt.ValidateScriptScope();
+		pointHurt.GetScriptScope().InputHurt <- HurtQueue.InputHurt.bindenv(HurtQueue);
+		pointHurt.GetScriptScope().resetName <- HurtQueue.resetName.bindenv(HurtQueue);
+	
+	}
 }
-HurtQueue.pointHurt = Entities.CreateByClassname("point_hurt");
-HurtQueue.pointHurt.__KeyValueFromString("DamageTarget", HurtQueue.hurtName);
-HurtQueue.pointHurt.ValidateScriptScope();
-HurtQueue.pointHurt.GetScriptScope().InputHurt <- HurtQueue.InputHurt.bindenv(HurtQueue);
-HurtQueue.pointHurt.GetScriptScope().resetName <- HurtQueue.resetName.bindenv(HurtQueue);
+::HurtQueue.init();
