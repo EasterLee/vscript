@@ -4,14 +4,14 @@
 	GameTextQueue.enqueue(String message, Template FadeTemplate/ScanTemplate);
 */
 if("GameTextQueue" in getroottable()){
-	GameTextQueue.init();
+	::GameTextQueue.init();
 	return;
 }
 ::GameTextQueue <- {
-	gameText = null,
-	queue = null,
-	last = null,
-	n = 0,
+	gameText = null, //entity handle
+	queue = null, //queue
+	last = null, //last node in the queue
+	n = 0, //size of the queue
 	textNode = class{
 		next = null;
 		message = null;
@@ -112,10 +112,6 @@ if("GameTextQueue" in getroottable()){
 	}
 	function size(){
 		return n;
-	}
-	function InputDisplay(){
-		gameText.__KeyValueFromString();
-		return true;
 	}
 	function init(){
 		if(gameText){

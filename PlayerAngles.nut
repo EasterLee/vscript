@@ -8,18 +8,22 @@ if ("PlayerAngles" in getroottable()){
 }
 ::PlayerAngles <- {	
 	eyeTable = {},
+	//Angles
 	function eyeAngles(ply){
 		return eyeTable[ply].GetAngles();
 	}
+	//ForwardVector
 	function eyeFV(ply){ //same as getEye(ph).getForwardVector();
 		return eyeTable[ply].GetForwardVector();
 	}
+	//Whether a player has a measure movement attached
 	function hasEye(ply){
 		if (!eyeTable.rawin(ply)){
 			return false;
 		}
 		return eyeTable[ply] != null;
 	}
+	//Spawn measure movement for a player
 	function makeEye(ply){			
 		local handle = Entities.CreateByClassname("logic_measure_movement");
 		handle.ValidateScriptScope();
@@ -44,9 +48,11 @@ if ("PlayerAngles" in getroottable()){
 		EntFireByHandle(handle, "Enable", "", 0.00, null, null);
 		eyeTable[ply] <- handle.weakref();
 	}
+	//Entity handle of measure movement
 	function getEye(ply){
 		return eyeTable[ply];
 	}
+	//Destroy
 	function delEye(ply){
 		::GameStrings.enqueuePointer(eyeTable[ply]);
 		eyeTable[ply].destroy();

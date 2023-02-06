@@ -1,5 +1,5 @@
 /*
-	Artifically dismember string from the gamestringtable
+	Artifically dismember string from the gamestringtable by spawning entities
 	double check with dumpgamestringtable command
 	
 	Require 
@@ -16,12 +16,15 @@ if("GameStrings" in getroottable()){
 	return;
 }
 ::GameStrings <-{
-	stringTemplate = null,
-	strings = [],
-	stringsLowPriority = [],
-	interval = 0.01,
-	thinking = false,
+	stringTemplate = null, //entity handle of the template
+	strings = [],  //string queue
+	stringsLowPriority = [], //strings that will be added to the string queue at next round start
+	interval = 0.01, //time between each spawn
+	
+	//run at round start
 	function init(){
+	
+		//add to the string queue
 		while(stringsLowPriority.len() != 0){
 			strings.push(stringsLowPriority.pop());
 		}
@@ -31,11 +34,15 @@ if("GameStrings" in getroottable()){
 		stringTemplate.GetScriptScope().PreSpawnInstance <- true;
 		stringTemplate.GetScriptScope().PostSpawn <- true;
 
+		//start thinking
 		if(strings.len()){
 			EntFireByHandle(stringTemplate, "ForceSpawn", "", interval, null, null);
 		}
+		
+		//enqueue itself
 		enqueuePointer(stringTemplate);
 	}
+	//execute at forcespawn
 	function __ExecutePreSpawn(ent){
 		local str;
 		if(strings.len()){
@@ -43,7 +50,8 @@ if("GameStrings" in getroottable()){
 		}else{
 			return false;
 		}
-		ent.__KeyValueFromString( "targetname", str);		
+		ent.__KeyValueFromString( "targetname", str);	
+		//continue thinking
 		if(strings.len()){
 			EntFireByHandle(stringTemplate, "ForceSpawn", "", interval, null, null);
 		}
@@ -54,6 +62,7 @@ if("GameStrings" in getroottable()){
 			stringsLowPriority.push(str);
 			return;
 		}
+		//start thinking
 		if(!strings.len()){
 			EntFireByHandle(stringTemplate, "ForceSpawn", "", interval, null, null);
 		}
@@ -63,6 +72,8 @@ if("GameStrings" in getroottable()){
 		entity.ValidateScriptScope();
 		enqueue(entity.GetScriptScope().__vname, true);
 	}
+	
+	//testing
 	function fill(i){
 		for(;i--;){
 			local unique = "z " + UniqueString();

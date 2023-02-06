@@ -16,11 +16,14 @@ if("EntitiesMaker" in getroottable()){
 }
 
 ::EntitiesMaker <- {
-	templates = {},
-	maker = null,
-	entities = null,
-	keyvalue = null,
+	templates = {}, //storing the entity handle of template that have been initialized
+	maker = null, //entity handle of the env_entity_maker
+	entities = null, //entities from PostSpawn
+	keyvalue = null, //keyvalue for PreSpawnInstance
+	
+	//run before the entity is spawned to ensure the point_template is initialized
 	function _initialize(templateName){
+		//ignore if already initialized
 		if(templates.rawin(templateName)){
 			::Assert(templates[templateName].IsValid(), templateName + " Not Valid");
 			return;
@@ -48,6 +51,7 @@ if("EntitiesMaker" in getroottable()){
 			return keyvalue[preTemplateName];
 		}
 	}
+	//initialize and set keyvalue
 	function _setKey(temp,k){
 		_initialize(temp)
 		keyvalue = k;

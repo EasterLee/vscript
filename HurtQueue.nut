@@ -5,6 +5,7 @@
 	HurtQueue.enqueue(handle[] victims, int damageAmount, int damageType, handle attacker = null, string weapon = null);
 */
 if("HurtQueue" in getroottable()){
+	::HurtQueue.init();
 	return;
 }
 
@@ -32,16 +33,16 @@ enum DMG_TYPE {
 	REMOVENORAGDOLL = 4194304
 }
 ::HurtQueue <- {
-	pointHurt = null,
-	hurtName = "hurt_player",
-	defaultName = "player",
-	queue = null,
-	last = null,
-	n = 0,
-	hurtNode = class{
+	pointHurt = null, //entity handle
+	hurtName = "hurt_player", //set victims targetname to this before hurt
+	defaultName = "player", //set victims targetname to this after hurt
+	queue = null, //queue
+	last = null, //last node
+	n = 0, //size
+	hurtNode = class{ //should have used LinkedQueue.nut
 		next = null;
 		
-		victims = null;
+		victims = null; //array of player handle
 		
 		damageAmount = null;
 		damageType = null;
@@ -68,6 +69,7 @@ enum DMG_TYPE {
 		EntFireByHandle(pointHurt, "Hurt", "", 0.00, attacker, null);
 		EntFireByHandle(pointHurt, "RunScriptCode", "resetName()", 0.00, null, null);
 	}
+	//execute right after hurt
 	function resetName(){
 		local prev = dequeue();
 		foreach(v in prev.victims){
@@ -88,6 +90,7 @@ enum DMG_TYPE {
 	function size(){
 		return n;
 	}
+	//execute right before hurt
 	function InputHurt(){
 		foreach(v in queue.victims){
 			if(v){
@@ -110,7 +113,10 @@ enum DMG_TYPE {
 		pointHurt.ValidateScriptScope();
 		pointHurt.GetScriptScope().InputHurt <- HurtQueue.InputHurt.bindenv(HurtQueue);
 		pointHurt.GetScriptScope().resetName <- HurtQueue.resetName.bindenv(HurtQueue);
-	
+		
+		queue = null;
+		last = null;
+		n = 0;
 	}
 }
 ::HurtQueue.init();
