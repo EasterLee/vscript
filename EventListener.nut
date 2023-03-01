@@ -110,7 +110,7 @@ if("EventListener" in getroottable()){
 		constructor(event){		
 			this.callbacks = [];
 			this.scallbacks = [];
-			this.eventDatas = LinkedQueue();
+			this.eventDatas = [];
 			kv.EventName = event;
 			kv.Targetname = event;
 			local keyvalue = {};
@@ -127,7 +127,7 @@ if("EventListener" in getroottable()){
 			delegate delegation: ss;
 		}
 		function OnEventFired(){
-			local data = eventDatas.dequeue();
+			local data = eventDatas.remove(0);
 			for(local i = callbacks.len() - 1; i >= 0; i--){
 				try{
 					//if callback returned false
@@ -143,7 +143,7 @@ if("EventListener" in getroottable()){
 			}
 		}
 		function newslot(k, v){
-			eventDatas.enqueue(v);
+			eventDatas.push(v);
 			for(local i = scallbacks.len() - 1; i >= 0; i--){
 				try{
 					//if callback returned false

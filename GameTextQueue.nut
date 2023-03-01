@@ -9,9 +9,7 @@ if("GameTextQueue" in getroottable()){
 }
 ::GameTextQueue <- {
 	gameText = null, //entity handle
-	queue = null, //queue
-	last = null, //last node in the queue
-	n = 0, //size of the queue
+	queue = [],
 	textNode = class{
 		next = null;
 		message = null;
@@ -82,33 +80,16 @@ if("GameTextQueue" in getroottable()){
 	},
 	function enqueue(player, message, template){
 		local node = textNode(message, template);
-		if(queue == null){
-			queue = node;
-			last = node;
-		}else{
-			last.next = node;
-			last = node;
-		}
-		n++;
+		queue.push(node);
 		//printl("Enqueued. Current size: " + size());
 		//change keyvalues right before the text is displayed
-		EntFireByHandle(gameText, "RunScriptCode", "setKeyValues();", 0.00, null, null);
+		EntFireByHandle(gameText, "RunScriptCode", "GameTextQueue.setKeyValues();", 0.00, null, null);
 		EntFireByHandle(gameText, "Display", "", 0.00, player, null);
 	}
 	function setKeyValues(){
-		local node = dequeue();
+		local node = queue.remove(0);
 		gameText.__KeyValueFromString("message", node.message);  
 		node.template.setKeyValues(gameText);
-	}
-	function dequeue(){
-		local q = queue;
-		queue = queue.next;
-		if(!queue){
-			last = null;
-		}
-		n--;
-		//printl("Dequeued. Current size: " + size());
-		return q;
 	}
 	function size(){
 		return n;

@@ -36,9 +36,7 @@ enum DMG_TYPE {
 	pointHurt = null, //entity handle
 	hurtName = "hurt_player", //set victims targetname to this before hurt
 	defaultName = "player", //set victims targetname to this after hurt
-	queue = null, //queue
-	last = null, //last node
-	n = 0, //size
+	queue = [],
 	hurtNode = class{ //should have used LinkedQueue.nut
 		next = null;
 		
@@ -57,50 +55,34 @@ enum DMG_TYPE {
 	},
 	function enqueue(victims, damageAmount, damageType, attacker = null, weapon = null){
 		local node = hurtNode(victims, damageAmount, damageType, weapon);
-		if(queue == null){
-			queue = node;
-			last = node;
-		}else{
-			last.next = node;
-			last = node;
-		}
-		n++;
+		queue.push(node);
 		//printl("Enqueued. Current size: " + size());
 		EntFireByHandle(pointHurt, "Hurt", "", 0.00, attacker, null);
 		EntFireByHandle(pointHurt, "RunScriptCode", "resetName()", 0.00, null, null);
 	}
 	//execute right after hurt
 	function resetName(){
-		local prev = dequeue();
+		local prev = queue.remove(0); //should be fine as long queue size doesn't exceed 10k.
 		foreach(v in prev.victims){
 			v.__KeyValueFromString("targetname", defaultName);
 			//printl("name reset for: " + v);
 		}
-	}
-	function dequeue(){
-		local q = queue;
-		queue = queue.next;
-		if(!queue){
-			last = null;
-		}
-		n--;
-		//printl("Dequeued. Current size: " + size());
-		return q;
 	}
 	function size(){
 		return n;
 	}
 	//execute right before hurt
 	function InputHurt(){
-		foreach(v in queue.victims){
+		local node = queue[0];
+		foreach(v in node.victims){
 			if(v){
 				v.__KeyValueFromString("targetname", hurtName);
 				//printl("victims: " + v);
 			}
 		}
-		pointHurt.__KeyValueFromInt("Damage", queue.damageAmount);
-		pointHurt.__KeyValueFromInt("DamageType", queue.damageType);
-		pointHurt.__KeyValueFromString("classname", queue.weapon != null ? queue.weapon : "point_hurt");
+		pointHurt.__KeyValueFromInt("Damage", node.damageAmount);
+		pointHurt.__KeyValueFromInt("DamageType", node.damageType);
+		pointHurt.__KeyValueFromString("classname", node.weapon != null ? node.weapon : "point_hurt");
 		return true;
 	}
 	function init(){
@@ -114,9 +96,7 @@ enum DMG_TYPE {
 		pointHurt.GetScriptScope().InputHurt <- HurtQueue.InputHurt.bindenv(HurtQueue);
 		pointHurt.GetScriptScope().resetName <- HurtQueue.resetName.bindenv(HurtQueue);
 		
-		queue = null;
-		last = null;
-		n = 0;
+		queue = [];
 	}
 }
 ::HurtQueue.init();
