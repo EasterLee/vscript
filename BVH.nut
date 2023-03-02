@@ -2,7 +2,7 @@
 ::min <- function(a, b){
 	return a > b ? b : a;
 };
-::min <- function(a, b){
+::max <- function(a, b){
 	return a < b ? b : a;
 };
 
@@ -236,13 +236,13 @@ class BVH{
 	function pointVAABB(p, aabb){
 		local min = aabb.mins();
 		local max = aabb.maxs();
-		printl("x");
+		//printl("x");
 		if(p.x < min.x || p.x > max.x) return false;
-		printl("y");
+		//printl("y");
 		if(p.y < min.y || p.y > max.y) return false;
-		printl("z");
+		//printl("z");
 		if(p.z < min.z || p.z > max.z) return false;
-		printl("done");
+		//printl("done");
 		return true;
 	},
 	function pointVPlane(p, plane){
@@ -370,70 +370,53 @@ class BVH{
 	},
 	function AABBVOBB(aabb, obb){
 		//obb against aabb
-		local obbMin = 99999;
-		local obbMax = -99999;
-		local points = obb.absPoints();
+		local obbPoints = obb.absPoints();
+		local aabbPoints = aabb.absPoints();
 		
-		local aabbMin = aabb.mins();
-		local aabbMax = aabb.maxs();
-		//x
-		foreach(v in points){
-			obbMin = min(obbMin, v.x);
-			obbMax = max(obbMax, v.x);
-		}
-		if(aabbMin.x > obbMax || obbMin > aabbMax.x) return false;
-		obbMin = 99999;
-		obbMax = -99999;
-		//y
-		foreach(v in points){
-			obbMin = min(obbMin, v.y);
-			obbMax = max(obbMax, v.y);
-		}
-		if(aabbMin.y > obbMax || obbMin > aabbMax.y) return false;
-		obbMin = 99999;
-		obbMax = -99999;
-		//z
-		foreach(v in points){
-			obbMin = min(obbMin, v.z);
-			obbMax = max(obbMax, v.z);
-		}
-		if(aabbMin.y > obbMax || obbMin > aabbMax.y) return false;
-		//aabb against obb
-		aabbMin = 99999;
-		aabbMax = -99999;
-		points = aabb.absPoints();
-		foreach(k, v in points){
-			points[k] = obb.toLocal(v);
-		}
-		
-		obbMin = obb.aabb.mins();
-		obbMax = obb.aabb.maxs();
-		
-		//x
-		foreach(v in points){
-			aabbMin = min(aabbMin, v.x);
-			aabbMax = max(aabbMax, v.x);
-		}
-		if(aabbMin > obbMax.x || obbMin.x > aabbMax) return false;
-		aabbMin = 99999;
-		aabbMax = -99999;
-		//y
-		foreach(v in points){
-			aabbMin = min(aabbMin, v.y);
-			aabbMax = max(aabbMax, v.y);
-		}
-		if(aabbMin > obbMax.y || obbMin.y > aabbMax) return false;
-		aabbMin = 99999;
-		aabbMax = -99999;
-		//z
-		foreach(v in points){
-			aabbMin = min(aabbMin, v.z);
-			aabbMax = max(aabbMax, v.z);
-		}
-		if(aabbMin > obbMax.z || obbMin.z > aabbMax) return false;
-		
+		foreach(v in aabb.worldVectors){
+			if(_axisGapExist(v, obbPoints, aabbPoints)) {
+				//printl(v);
+				return false;
+			}
+		}		
+		foreach(v in obb.worldVectors){
+			if(_axisGapExist(v, obbPoints, aabbPoints)) {
+				//printl(v);
+				return false;
+			}
+		}		
+		foreach(v1 in aabb.worldVectors){
+			foreach(v2 in obb.worldVectors){
+				if(_axisGapExist(v1.Cross(v2), obbPoints, aabbPoints)) {
+					//printl(v1.Cross(v2));
+					return false;
+				}
+			}	
+		}	
 		return true;
 	},
+	function _axisGapExist(axis, points1, points2){
+		local min1 = 99999;
+		local max1 = -99999;
+		local min2 = 99999;
+		local max2 = -99999;
+		
+		foreach(v in points1){
+			local dot = axis.Dot(v);
+			min1 = min(min1, dot);
+			max1 = max(max1, dot);
+		}		
+		foreach(v in points2){
+			local dot = axis.Dot(v);
+			min2 = min(min2, dot);
+			max2 = max(max2, dot);
+		}
+		// printl(min1);
+		// printl(max1);
+		// printl(min2);
+		// printl(max2);
+		return (min1 > max2 || min2 > max1);
+	}
 	function AABBVSphere(aabb, sphere){
 		return pointVSphere(aabb.closestPoint(sphere.center), sphere);
 	},
@@ -450,72 +433,37 @@ class BVH{
 		return AABBVOBB(aabb, obb);
 	},
 	function OBBVOBB(obb1, obb2){
-		//obb1 against obb2
-		local obb1Min = 99999;
-		local obb1Max = -99999;
-		local points = obb1.absPoints();
-		foreach(k, v in points){
-			points[k] = obb2.toLocal(v);
+		local obbPoints = obb1.absPoints();
+		local aabbPoints = obb2.aabb.absPoints();
+		foreach(k, v in obbPoints){
+			obbPoints[k] = obb2.aabb.toWorld(obb2.toLocal(v));
 		}
-		
-		local obb2Min = obb2.aabb.mins();
-		local obb2Max = obb2.aabb.maxs();
-		//x
-		foreach(v in points){
-			obb1Min = min(obb1Min, v.x);
-			obb1Max = max(obb1Max, v.x);
-		}
-		if(obb2Min.x > obb1Max || obb1Min > obb2Max.x) return false;
-		obb1Min = 99999;
-		obb1Max = -99999;
-		//y
-		foreach(v in points){
-			obb1Min = min(obb1Min, v.y);
-			obb1Max = max(obb1Max, v.y);
-		}
-		if(obb2Min.y > obb1Max || obb1Min > obb2Max.y) return false;
-		obb1Min = 99999;
-		obb1Max = -99999;
-		//z
-		foreach(v in points){
-			obb1Min = min(obb1Min, v.z);
-			obb1Max = max(obb1Max, v.z);
-		}
-		if(obb2Min.z > obb1Max || obb1Min > obb2Max.z) return false;
-		//obb2 against obb1
-		obb2Min = 99999;
-		obb2Min = -99999;
-		points = obb2.absPoints();
-		foreach(k, v in points){
-			points[k] = obb1.toLocal(v);
-		}
-		
-		obb1Min = obb1.aabb.mins();
-		obb1Max = obb1.aabb.maxs();
-		
-		//x
-		foreach(v in points){
-			obb2Min = min(obb2Min, v.x);
-			obb2Max = max(obb2Max, v.x);
-		}
-		if(obb2Min > obb1Max.x || obb1Min.x > obb2Max) return false;
-		obb2Min = 99999;
-		obb2Max = -99999;
-		//y
-		foreach(v in points){
-			obb2Min = min(obb2Min, v.y);
-			obb2Max = max(obb2Max, v.y);
-		}
-		if(obb2Min > obb1Max.y || obb1Min.y > obb2Max) return false;
-		obb2Min = 99999;
-		obb2Min = -99999;
-		//z
-		foreach(v in points){
-			obb2Min = min(obb2Min, v.z);
-			obb2Min = max(obb2Min, v.z);
-		}
-		if(obb2Min > obb1Max.z || obb1Min.z > obb2Max) return false;
-		
+		local newAxis = [
+			OBB.Ax(obb2.localVectors, obb1.worldVectors[0]),
+			OBB.Ax(obb2.localVectors, obb1.worldVectors[1]),
+			OBB.Ax(obb2.localVectors, obb1.worldVectors[2])
+		];
+		foreach(v in obb2.aabb.worldVectors){
+			if(_axisGapExist(v, obbPoints, aabbPoints)) {
+				//print("aabb: ");
+				//printl(v);
+				return false;
+			}
+		}		
+		foreach(v in newAxis){
+			if(_axisGapExist(v, obbPoints, aabbPoints)) {
+				//printl(v);
+				return false;
+			}
+		}		
+		foreach(v1 in obb2.aabb.worldVectors){
+			foreach(v2 in newAxis){
+				if(_axisGapExist(v1.Cross(v2), obbPoints, aabbPoints)) {
+					//printl(v1.Cross(v2));
+					return false;
+				}
+			}	
+		}	
 		return true;
 	},
 	function OBBVSphere(obb, sphere){
