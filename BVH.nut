@@ -22,7 +22,7 @@
 	arr[j] = o;
 }
 
-class BVH{
+::BVH <- class{
 	nodes = null;
 	nodesUsed = 1;
 	_objs = null; //actual object
@@ -41,18 +41,18 @@ class BVH{
 			return objCount > 0;
 		}
 	}
-	constructor(objs){
+	constructor(_objs){
 		nodes = [];
 		colors = [];
-		_objs = objs;
+		this._objs = _objs;
 		this.objs = [];
-		for(local i = 0; i < _objs.len(); i++){
+		for(local i = 0; i < this._objs.len(); i++){
 			this.objs.push(i);
 		}
 		nodes.push(Node());
 		local root = nodes[0];
 		root.leftNode = 0; 
-		root.objCount = objs.len();
+		root.objCount = this.objs.len();
 		
 		updateNodeBounds();
 		subdivide();
@@ -68,7 +68,7 @@ class BVH{
 		//printl("Creating bound for objects between index " + node.leftNode + " and " + node.objCount);
 		//for each object
 		for(local i = node.leftNode; i < node.leftNode + node.objCount; i++){
-			local obj = _objs[objs[i]];
+			local obj = _objs[objs[i]].bbox();
 			local oMins = obj.mins();
 			local oMaxs = obj.maxs();
 			//for aabb type
@@ -77,9 +77,9 @@ class BVH{
 			mins.y = min(mins.y, oMins.y);
 			mins.z = min(mins.z, oMins.z);
 			
-			maxs.x = min(maxs.x, oMaxs.x);
-			maxs.y = min(maxs.y, oMaxs.y);
-			maxs.z = min(maxs.z, oMaxs.z);
+			maxs.x = max(maxs.x, oMaxs.x);
+			maxs.y = max(maxs.y, oMaxs.y);
+			maxs.z = max(maxs.z, oMaxs.z);
 		}
 		local center = (maxs + mins) * 0.5;
 		node.bbox = AABB(center, maxs - center);
@@ -107,7 +107,7 @@ class BVH{
 		}
 		//printl("pos splited on axis " + axis);
 		//printl("axisLength: " + axisLength[axis]);
-		local splitPos = node.bbox.center[axis];
+		local splitPos = node.bbox.getCenter()[axis];
 		//printl("splitPos: " + splitPos);
 		//printl("node.bbox.center(): " + node.bbox.center());
 		
@@ -115,12 +115,12 @@ class BVH{
 		local i = node.leftNode;
 		local j = i + node.objCount - 1;
 		while(i <= j){
-			if(_objs[objs[i]].center[axis] < splitPos){
+			if(this._objs[this.objs[i]].getCenter()[axis] < splitPos){
 				//printl("to left");
 				i++
 			}else{
 				//printl("to right");
-				swap(objs, i, j);
+				swap(this.objs, i, j);
 				j--;
 			}
 		}
@@ -183,21 +183,20 @@ class BVH{
 			_drawLayer(level, node.leftNode + 1, layer + 1, alpha, duration);
 		}
     }
-	function intersect(object, arr = []){
+	function intersect(object, arr){
 		_intersect(object, 0, arr);
 		return arr;
 	}
 	function _intersect(object, nodeIdx, arr){
 		local node = nodes[nodeIdx];
-		
-		if(node.isLeaf()){
-			for(local i = node.leftNode; i < node.leftNode + node.objCount; i++){
-				arr.push(i);
-			}
-			return;
-		}
-		
 		if(Collision.intersect(object, node.bbox)){
+			if(node.isLeaf()){
+				//node.bbox.draw(Vector(0,255,0), 50, 0);
+				for(local i = node.leftNode; i < node.leftNode + node.objCount; i++){
+					arr.push(objs[i]);
+				}
+				return;
+			}
 			_intersect(object, node.leftNode, arr);
 			_intersect(object, node.leftNode + 1, arr);
 		}
@@ -253,8 +252,8 @@ class BVH{
 		return (sphere.center - p).LengthSqr() < sphere.radiusSqr;
 	},
 	function pointVOBB(vec, obb){
-		DebugDrawBox((obb.aabb.center + obb.toLocal(vec)), Vector(-5,-5,-5), Vector(5,5,5), 255, 0, 0, 255, 0);
-		obb.aabb.draw(Vector(255,255,255), 10, 0);
+		//DebugDrawBox((obb.aabb.center + obb.toLocal(vec)), Vector(-1,-1,-1), Vector(1,1,1), 255, 0, 0, 255, 0);
+		//obb.aabb.draw(Vector(255,255,255), 10, 0);
 		return pointVAABB(obb.aabb.center + obb.toLocal(vec), obb.aabb);
 	},
 	function lineVPoint(line, point){

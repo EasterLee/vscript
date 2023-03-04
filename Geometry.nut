@@ -1,5 +1,10 @@
 ::AABB <- class{ 
 	static type = "AABB";
+	worldVectors = [
+		Vector(1,0,0),
+		Vector(0,1,0),
+		Vector(0,0,1),
+	];
 	extent = null;
 	center = null;
     constructor(center, extent) {
@@ -66,6 +71,9 @@
 	} 	
 	function bbox(){
 		return AABB(center, extent);
+	}	
+	function getCenter(){
+		return center;
 	}
 };
 
@@ -108,6 +116,9 @@
 			Vector(c2 * s1, c1 * c3 + s1 * s2 * s3, c3 * s1 * s2 - c1 * s3), // left vector
 			Vector(-s2, c2 * s3, c2 * c3) // up vector
 		];
+	}
+	function getCenter(){
+		return aabb.center;
 	}
 	static Ax = function(a, x){
 		local nullVec = Vector(0,0,0);
@@ -181,7 +192,7 @@
 	function lengthSqr(){
 		return (end - start).LengthSqr();
 	}
-	function center(){
+	function getCenter(){
 		return (start + end) * 0.5;
 	}
 	function max(){
@@ -262,11 +273,15 @@
 	function bbox(){
 		return AABB(center, Vector(radius, radius, radius));
 	}
+	function getCenter(){
+		return center;
+	}
 };
 //BezierCurveCubic
 ::BCC <- class{
 	cp = null; //control points
 	length = null;
+	timeToLength = null;
 	static align = function(ctrl1, pivot, ctrl2):(VectorManipulation){ //align ctrl1 along line made by pivot and ctrl2
 		local dis1 = ctrl2 - pivot; //displacement from pivot to ctrl2
 		local dis2 = ctrl1 - pivot; //displacement from pivot to ctrl1
@@ -280,13 +295,13 @@
 		cp = [start, ctrl1, ctrl2, end];
 	}
 	function f(t){ //return a point at t of the curve
-		return 	cp[0] * pow(1-t, 3) + 
-				cp[1] * (3 * t * pow(1-t, 2)) + 
-				cp[2] * (3 * (1 - t) * pow(t, 2)) + 
-				cp[3] * pow(t, 3);
+		return 	cp[0] * (1-t) * (1-t) * (1-t) + 
+				cp[1] * (3 * t * (1-t) * (1-t)) + 
+				cp[2] * (3 * (1-t) * t * t) + 
+				cp[3] * t * t * t;
 	}
 	function d1(t){//return first derivative
-		local v1 = (cp[1] - cp[0]) * (3 * pow(1-t, 2));
+		local v1 = (cp[1] - cp[0]) * (3 * (1-t) * (1-t));
 		local v2 = (cp[2] - cp[1]) * (6 * (1-t) * t);
 		local v3 = (cp[3] - cp[2]) * (3 * t * t);
 		return v1 + v2 + v3;
@@ -297,13 +312,25 @@
 	}
 	function _getLength(steps){
 		local inv = 1.0/steps;
+		timeToLength = [0];
 		length = 0;
 		for(local i = 0; i < steps; i++){
 			local p1 = f(i * inv);
 			local p2 = f((i + 1) * inv);
 			length += (p2 - p1).Length();
+			timeToLength.push(length);
 		}
 		return length;
+	}
+	function lengthAtTime(t){
+		local idx = (timeToLength.len() - 1) * t;
+		local remainder = idx - floor(idx);
+		local upper = timeToLength[ceil(idx)];
+		local lower = timeToLength[floor(idx)];
+		return (upper - lower) * remainder + lower;
+	}
+	function timeAtLength(d){
+		
 	}
 	function draw(steps, color, noDepth, duration){
 		local inv = 1.0/steps;
@@ -326,7 +353,7 @@
         local t = start;
         while (t <= end) {
 			
-			local vec1 = interpolate(t);
+			local vec1 = f(t);
 			
             local currentDistance = (vec1 - vec).LengthSqr();
             if (currentDistance < bestDistance) {
